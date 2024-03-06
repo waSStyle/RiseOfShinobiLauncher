@@ -2,6 +2,8 @@
  * Script for landing.ejs
  */
 // Requirements
+const fs = require('fs');
+const cry = require('crypto')
 const { URL }                 = require('url')
 const {
     MojangRestAPI,
@@ -41,8 +43,6 @@ const server_selection_button = document.getElementById('server_selection_button
 const user_text               = document.getElementById('user_text')
 
 const loggerLanding = LoggerUtil.getLogger('Landing')
-
-/* Launch Progress Wrapper Functions */
 
 /**
  * Show/hide the loading area.
@@ -98,17 +98,88 @@ function setLaunchEnabled(val){
     document.getElementById('launch_button').disabled = !val
 }
 
+async function verifyMods() {
+    try {
+        const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer());
+        const servers = (await DistroAPI.getDistribution()).rawDistribution.servers;
+        let md5List = [];
+        servers.forEach(server => {
+            if (server.id == ConfigManager.getSelectedServer()) {
+                server.modules.forEach(module => {
+                    if (module.type === "ForgeMod" || (module.type === "File" && module.artifact.path.startsWith("mods/"))) {
+                        let md5 = module.artifact.MD5;
+                        md5List.push(md5);
+                    }
+                });
+            }
+        });
+        loggerLanding.info("liste: " + md5List)
+        const CACHE_SETTINGS_MODS_DIR = path.join(ConfigManager.getInstanceDirectory(), serv.rawServer.id, 'mods');
+        if (fs.existsSync(CACHE_SETTINGS_MODS_DIR)) { 
+            const files = fs.readdirSync(CACHE_SETTINGS_MODS_DIR);
+            loggerLanding.info("files: " + files.length)
+            files.forEach(file => {
+                const filePath = path.join(CACHE_SETTINGS_MODS_DIR, file);
+                const fileContent = fs.readFileSync(filePath);
+                const fileMd5 = cry.createHash('md5').update(fileContent).digest('hex');
+                if (!md5List.includes(fileMd5)) {
+                    console.log(`ALERTE: Le fichier ${file} n'a pas un MD5 correspondant dans la liste.`);
+                    window.close()
+                } 
+            });
+        }
+    } catch (error) {
+        console.error('Error logging modStr:', error);
+    }
+}
+
 // Bind launch button
 document.getElementById('launch_button').addEventListener('click', async e => {
+    verifyMods()
     loggerLanding.info('Launching game..')
+    /*try {
+        const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer());
+        const servers = (await DistroAPI.getDistribution()).rawDistribution.servers;
+        let md5List = [];
+        servers.forEach(server => {
+            if (server.id == ConfigManager.getSelectedServer()) {
+                server.modules.forEach(module => {
+                    if (module.type === "ForgeMod") {
+                        let md5 = module.artifact.MD5;
+                        md5List.push(md5);
+                    }
+                });
+            }
+        });
+        loggerLanding.info("liste: " + md5List)
+        const CACHE_SETTINGS_MODS_DIR = path.join(ConfigManager.getInstanceDirectory(), serv.rawServer.id, 'mods');
+        const files = fs.readdirSync(CACHE_SETTINGS_MODS_DIR);
+        loggerLanding.info("files: " + files.length)
+        files.forEach(file => {
+            const filePath = path.join(CACHE_SETTINGS_MODS_DIR, file);
+            const fileContent = fs.readFileSync(filePath);
+            const fileMd5 = crypto.createHash('md5').update(fileContent).digest('hex');
+    
+            // Vérifier si le MD5 du fichier n'est pas dans la liste md5List
+            if (!md5List.includes(fileMd5)) {
+                console.log(`ALERTE: Le fichier ${file} n'a pas un MD5 correspondant dans la liste.`);
+            } else {
+                console.log("BIEN JOUER LE MD5 EST BON YOUPI TA MERE LA PUTE")
+            }
+        });
+    } catch (error) {
+        console.error('Error logging modStr:', error);
+    }*/
+
     try {
         const server = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
+        verifyMods()
         const jExe = ConfigManager.getJavaExecutable(ConfigManager.getSelectedServer())
         if(jExe == null){
             await asyncSystemScan(server.effectiveJavaOptions)
         } else {
-
             setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
+            verifyMods()
             toggleLaunchArea(true)
             setLaunchPercentage(0, 100)
 

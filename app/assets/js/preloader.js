@@ -31,7 +31,6 @@ LangLoader.setupLanguage()
  */
 function onDistroLoad(data){
     if(data != null){
-        
         // Resolve the selected server if its value has yet to be set.
         if(ConfigManager.getSelectedServer() == null || data.getServerById(ConfigManager.getSelectedServer()) == null){
             logger.info('Determining default selected server..')
