@@ -46,6 +46,6 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/waSStyle/RiseOfShinobiLauncher.git"
   }
 }
