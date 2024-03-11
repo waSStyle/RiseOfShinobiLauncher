@@ -105,7 +105,7 @@ async function verifyMods() {
 // Bind launch button
 document.getElementById('launch_button').addEventListener('click', async e => {
     verifyMods()
-    loggerLanding.info('Launching game..')
+    loggerLanding.info('Launching game...')
     /*try {
         const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer());
         const servers = (await DistroAPI.getDistribution()).rawDistribution.servers;
